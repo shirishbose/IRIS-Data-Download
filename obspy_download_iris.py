@@ -67,8 +67,9 @@ for st in stations:
                 continue
 
             # Request window
-            t1 = ev_time - 0
-            t2 = ev_time + 800
+            b = 300; e = 3000
+            t1 = ev_time - b
+            t2 = ev_time + e
 
             try:
                 st_data = client.get_waveforms(
@@ -91,7 +92,18 @@ for st in stations:
                     tr.stats.sac.evdp = row["depth"]
                     tr.stats.sac.mag = row["mag"]
                     tr.stats.sac.o = 0
-
+                    
+                    # Set the reference time exactly to ev_time
+                    tr.stats.sac.nzyear = ev_time.year
+                    tr.stats.sac.nzjday = ev_time.julday
+                    tr.stats.sac.nzhour = ev_time.hour
+                    tr.stats.sac.nzmin = ev_time.minute
+                    tr.stats.sac.nzsec = ev_time.second
+                    tr.stats.sac.nzmsec = int(ev_time.microsecond / 1000)
+                    tr.stats.sac.b = -b
+                    tr.stats.sac.o = 0.0
+                    tr.stats.sac.iztype = 11
+                    # ----------------------------------------------------
                     sac_name = f"{ev_time.strftime('%Y%m%d%H%M%S')}.{tr.stats.station}.{tr.stats.channel}.SAC"
                     tr.write(sac_name, format="SAC")
                     print(f"  [SUCCESS] Saved: {sac_name}")
