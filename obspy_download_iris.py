@@ -65,12 +65,12 @@ for st in stations:
             if not (st["starttime"] <= ev_time <= st["endtime"]):
                 print(f"  Skipping event {ev_time}: Outside station uptime.")
                 continue
-
-            # Request window
-            t1 = ev_time - 0
-            t2 = ev_time + 800
+            b = 0 ; e = 3000
+            t1 = ev_time + b
+            t2 = ev_time + e
 
             try:
+                # 2. Download the data using t1 and t2
                 st_data = client.get_waveforms(
                     network=st["network"],
                     station=st["station"],
@@ -79,30 +79,30 @@ for st in stations:
                     starttime=t1, endtime=t2
                 )
 
-                # Update SAC headers and save
+                # 3. Fix the headers so the origin time is exactly 0
                 for tr in st_data:
                     tr.stats.sac = {}
-                    tr.stats.sac.kstnm = st["station"]
-                    tr.stats.sac.knetwk = st["network"]
-                    tr.stats.sac.stla = st["latitude"]
-                    tr.stats.sac.stlo = st["longitude"]
-                    tr.stats.sac.evla = row["lat"]
-                    tr.stats.sac.evlo = row["lon"]
-                    tr.stats.sac.evdp = row["depth"]
-                    tr.stats.sac.mag = row["mag"]
-                    tr.stats.sac.o = 0
+                    # ... [Network, Station, Lat, Lon, Mag headers here] ...
 
+                    # Force Reference Time to Origin Time
+                    tr.stats.sac.nzyear = ev_time.year
+                    tr.stats.sac.nzjday = ev_time.julday
+                    tr.stats.sac.nzhour = ev_time.hour
+                    tr.stats.sac.nzmin = ev_time.minute
+                    tr.stats.sac.nzsec = ev_time.second
+                    tr.stats.sac.nzmsec = int(ev_time.microsecond / 1000)                
+                    tr.stats.sac.b = b 
+                    tr.stats.sac.o = 0.0
+                    tr.stats.sac.iztype = 11
+                    sac_name = f"{ev_time.strftime('%Y%m%d%H%M%S')}.{tr.stats.station}.{tr.stats.channel}.SAC"
+                    tr.write(sac_name, format="SAC")
                     sac_name = f"{ev_time.strftime('%Y%m%d%H%M%S')}.{tr.stats.station}.{tr.stats.channel}.SAC"
                     tr.write(sac_name, format="SAC")
                     print(f"  [SUCCESS] Saved: {sac_name}")
-
-            # --- MODIFICATION START: Explicitly print if data not found ---
             except FDSNNoDataException:
                 print(f"  [MISSING] No data on server for {st['station']} at {ev_time}.")
             except Exception as e:
                 print(f"  [ERROR] Failed to download {st['station']} at {ev_time}: {e}")
-            # --- MODIFICATION END ---
-
     else:
         print(f"  Event file {event_file} not found.")
 
