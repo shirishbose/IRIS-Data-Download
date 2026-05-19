@@ -7,7 +7,7 @@ from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.header import FDSNNoDataException
 
 # -----------------------------
-# User settings
+# User settings  change
 # -----------------------------
 os.chdir("/home/shirish/SHIRISH/IRIS_Download/XL")
 xr_file = "XL"  # Station info
